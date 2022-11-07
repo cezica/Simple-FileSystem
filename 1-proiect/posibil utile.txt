@@ -1,0 +1,1 @@
+lsof este un utilitar care afișează informații despre fișierele deschise (ce fișiere sunt deschise în sistem, ce fișiere a deschis un anumit user etc). Căutați în manual (man 8 lsof) pentru a identifica semnificația coloanei FD și a coloanei TYPE.
