@@ -1,0 +1,16 @@
+dintr-o partitie cum citesc fisiere?
+o partitie de pe disk trebuie deschisa?
+-daca da, s-ar face cu open?(imi da permission denied. Am incercat sa rulez vs code cu root, dar tot n-am reusit)
+
+VSCode root, nu merge
+//permisiune
+sudo code /home/cezica/Documents/FS --user-data-dir='.' --no-sandbox
+
+
+-sudo mount /dev/sda5 "folder" si apoi cu opendir?
+mount? 
+DIR * opendir (const char *dirname)  
+eroare la read in directory
+
+
+
