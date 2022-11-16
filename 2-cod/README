@@ -1,0 +1,17 @@
+_FS:
+    Este prima abordare a unui sistem de fisiere prin crearea structurilor:
+        -superblock
+        -inode
+        -disk block
+(mai multe detalii + desene in intrebari_idei.one)
+
+FS:
+    A doua abordare a unui sistem de fisiere.
+    - Preia o partitie, ii face "mount" pentru a putea prelua fisierele.
+    - Copiaza un fisier integral (calea acestuia fiind precizata) catre un alt fisier
+    
+intrebari_idei.one:
+    Schite care au ajutat la implementari si idei.
+    
+_complicari.txt:
+    Idei de inceput nereusite.
