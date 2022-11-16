@@ -10,7 +10,7 @@
 //mount la o partitie specificata
 int mount_partition(const char* partname)
 {
-    if(mount(partname,".try","ext4",0,NULL)<0)
+    if(mount(partname,"./try","ext4",0,NULL)<0)
         {
             perror("mount");
             return -1;
