@@ -7,7 +7,7 @@ struct disk_block DB[MAX_DISK_BLOCKS];
 /////////////////////ajutatoare
 void create_inode(uint32_t mode, uint32_t uid, uint32_t gid, uint32_t blocks)
 {
-    struct inode iș
+    struct inode i;
     i.i_mode=mode;
     i._uid=uid;
     i.i_gid=gid;
