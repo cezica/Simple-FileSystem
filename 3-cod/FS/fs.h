@@ -14,6 +14,8 @@
 
 #define MAX_INODES 32
 
+#define MAX_READ 4096
+
 struct superblock{
     //uint32_t magic; /* Magic number */
 
@@ -45,6 +47,8 @@ struct disk_block{
     //uint32_t ee_start; /* first physical block extent covers */
 };
 
+#define OFFSET (sizeof(struct superblock)+sizeof(struct inode)*MAX_INODES)
+
 struct file{
     int inode;
     char name[256];
@@ -53,9 +57,3 @@ struct file{
 void create_fs(); //initializare fs
 void mount_fs(); //incarcarea unui fs
 void sync_fc(); //scriere fs
-
-void make_bitmap(unsigned long* bitmap,int size)
-{
-    for(int i=0;i<size;i++)
-        bitmap[i]=0;
-}
