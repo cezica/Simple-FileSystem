@@ -5,12 +5,13 @@ struct inode Inodes[MAX_INODES];
 struct disk_block DB[MAX_DISK_BLOCKS];
 
 /////////////////////ajutatoare
-void create_inode(struct inode* i)
+void create_inode(uint32_t mode, uint32_t uid, uint32_t gid, uint32_t blocks)
 {
-    i->i_mode="0000";
-    i->i_uid=0;
-    i->i_gid=0;
-    i->i_blocks=1;
+    struct inode iș
+    i.i_mode=mode;
+    i._uid=uid;
+    i.i_gid=gid;
+    i.i_blocks=blocks;
 }
 
 void create_disk_block(struct disk_block* db)
@@ -63,7 +64,7 @@ void sync_fs()
         perror("fd");
     
     //write superblock;
-    write(fd_fs,&SB.nr_blocks,sizeof(struct superblock));
+    write(fd_fs,&SB,sizeof(struct superblock));
 
     //write inodes
    
@@ -71,8 +72,6 @@ void sync_fs()
     
     
     close(fd_fs);
-
-    read_from_fs();
 }
 
 void main()
