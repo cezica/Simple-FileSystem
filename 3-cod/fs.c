@@ -40,17 +40,12 @@ void create_root()
 {
     Inodes[0] = create_inode(777, 0, 0, 0);
     SB.nr_free_inodes--;
-<<<<<<< HEAD
     SB.i_bitmap[0] = 1;
-=======
-    SB.i_bitmap[0]=1;
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
 
     for (int i = 1; i < MAX_INODES; i++)
         Inodes[i] = create_inode(0, 0, 0, 0);
 }
 
-<<<<<<< HEAD
 
 struct superblock read_superblock(int fd)
 {
@@ -72,58 +67,6 @@ void create_fs()
     create_disk_blocks();
 }
 
-=======
-//pt hexa
-int getNum(char ch)
-{
-    int num = 0;
-    if (ch >= '0' && ch <= '9') {
-        num = ch - 0x30;
-    }
-    else {
-        switch (ch) {
-        case 'A':
-        case 'a':
-            num = 10;
-            break;
-        case 'B':
-        case 'b':
-            num = 11;
-            break;
-        case 'C':
-        case 'c':
-            num = 12;
-            break;
-        case 'D':
-        case 'd':
-            num = 13;
-            break;
-        case 'E':
-        case 'e':
-            num = 14;
-            break;
-        case 'F':
-        case 'f':
-            num = 15;
-            break;
-        default:
-            num = 0;
-        }
-    }
-    return num;
-}
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
-
-//nr^a
-int power(int nr,int a)
-{
-    if(a==0)return 1;
-    for(int i=0;i<a;i++)
-    {
-        nr=nr*nr;
-    }
-    return nr;
-}
 
 unsigned int hex2int(unsigned char hex[])
 {
@@ -146,26 +89,6 @@ void initializare_block(char* info_block)
     SB.nr_free_inodes = hex2int(p);
 }
 
-struct superblock read_superblock(int fd)
-{
-    struct superblock SB2;
-    read(fd,&SB2,sizeof(struct superblock));
-    return SB2;
-
-}
-////////////////////
-void create_fs()
-{
-    //alloc superblock
-    create_superblock();
-
-    //alloc inode for root
-    create_root();
-    
-    //aloc disk_blocks
-    create_disk_blocks();
-}
-
 void mount_fs()
 {
     int fd_fs = open("fs.data", O_RDONLY);
@@ -185,16 +108,10 @@ void mount_fs()
     for (int i = 0; i < SB.nr_inodes; i++)
         SB.i_bitmap[i] = buffer[i];
 
-<<<<<<< HEAD
     for (int i = 0; i < SB.nr_inodes; i++)
-=======
-    //Initializare si inode
-    for(int i=0;i<SB.nr_inodes;i++)
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
     {
         if (SB.i_bitmap[i] == '1')
         {
-<<<<<<< HEAD
             char c = '0';
             int index = 0;
             while (buffer[index - 1] != 124)
@@ -218,39 +135,12 @@ void mount_fs()
             aux = hex2int(p);
             Inodes[i].i_uid = aux;
 
-=======
-            char c='0';
-            int index=0;
-            while(c!='|')
-            {  
-                read(fd_fs,buffer+index, 1);
-                c=buffer[index++];
-            }
-            char*p=strtok(buffer, "/|");
-            int aux=hex2int(p);
-            Inodes[i].i_mode=aux;
-
-            p=strtok(NULL, "/|");
-            aux=hex2int(p);
-            Inodes[i].i_uid=aux;
-
-            p=strtok(NULL, "/|");
-            aux=hex2int(p);
-            Inodes[i].i_uid=aux;
-
-            p=strtok(NULL, "/|");
-            aux=hex2int(p);
-            Inodes[i].i_uid=aux;
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
         }
         else
         {
             Inodes[i] = create_inode(0, 0, 0, 0);
         }
     }
-
-
-    //Initializare inodes
 
     close(fd_fs);
 }
@@ -295,15 +185,8 @@ void sync_fs()
     }
     write(fd_fs, " ", 1);
 
-<<<<<<< HEAD
     //write inodecreas
     for (int i = 0; i < SB.nr_inodes; i++)
-=======
-    //write inodes
-    // | intre inode-uri
-    // / intre datele dintr-un inode
-    for(int i=0;i<SB.nr_inodes;i++)
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
     {
         sprintf(hexstring, "%X", Inodes[i].i_mode);
         write(fd_fs, hexstring, strlen(hexstring));
@@ -323,7 +206,6 @@ void sync_fs()
             write(fd_fs, "|", 1);
     }
 
-<<<<<<< HEAD
     write(fd_fs, " ", 1);
     char hexablock[DISK_BLOCKS_SIZE * 2 + 1];
     //write disk blocks
@@ -337,8 +219,6 @@ void sync_fs()
     }
 
 
-=======
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
     close(fd_fs);
 }
 
@@ -356,13 +236,8 @@ void copyfrom(const char* file)
     {
         if (SB.i_bitmap[i] == 0)
         {
-<<<<<<< HEAD
             index = i;
             SB.i_bitmap[i] = 1;
-=======
-            index=i;
-            SB.i_bitmap[i]=1;
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
         }
         i++;
     }
@@ -403,10 +278,7 @@ void copyfrom(const char* file)
 
     }
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 43d1bdb3812822f581d348076a1c48be4e5bcfad
     sync_fs();
 
 
