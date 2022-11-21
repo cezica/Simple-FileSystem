@@ -16,9 +16,12 @@ struct inode create_inode(uint32_t mode, uint32_t uid, uint32_t gid, uint32_t bl
     return i;
 }
 
-void create_disk_block(struct disk_block* db)
+void create_disk_blocks()
 {
-    db->data=calloc(1,DISK_BLOCKS_SIZE);
+    for(int i=0;i<SB.nr_blocks;i++)
+    {
+        DB[i].data=calloc(DISK_BLOCKS_SIZE, 1);
+    }
 }
 
 void create_superblock()
@@ -28,8 +31,8 @@ void create_superblock()
     SB.nr_free_inodes=SB.nr_inodes;
     SB.nr_free_blocks=SB.nr_blocks;
     
-    SB.i_bitmap=calloc(1,SB.nr_inodes);
-    SB.b_bitmap=calloc(1,SB.nr_blocks);
+    SB.i_bitmap=calloc(SB.nr_inodes,1);
+    SB.b_bitmap=calloc(SB.nr_blocks,1);
 }
 
 //tabela inode si disk block-urile goale
@@ -40,9 +43,29 @@ void create_root()
     SB.i_bitmap[0]=1;
 
     for(int i=1;i<MAX_INODES;i++)
-       Inodes[i]=create_inode(644,0,0,0);
+       Inodes[i]=create_inode(0,0,0,0);
 }
 
+unsigned int hex2int(unsigned char hex[])
+{
+    int number = (int)strtol(hex, NULL, 16);
+    return number;
+}
+
+void initializare_block(char* info_block)
+{
+    char*p=strtok(info_block, " ");
+    SB.nr_blocks=hex2int(p);
+
+    p=strtok(NULL, " ");
+    SB.nr_inodes=hex2int(p);
+
+    p=strtok(NULL, " ");
+    SB.nr_free_blocks=hex2int(p);
+
+    p=strtok(NULL, " ");
+    SB.nr_free_inodes=hex2int(p);
+}
 
 struct superblock read_superblock(int fd)
 {
@@ -51,6 +74,25 @@ struct superblock read_superblock(int fd)
     return SB2;
 
 }
+
+unsigned char* read_data_for_db(char* buffer)
+{
+    char* buff=malloc(DISK_BLOCKS_SIZE+1);
+    int j=0;
+    for(int i=0;i<DISK_BLOCKS_SIZE*2;i+=2)
+    {
+        char cpy[2];
+        cpy[0]=buffer[i];
+        cpy[1]=buffer[i+1];
+
+        unsigned int to_int=hex2int(cpy);
+        buff[j]=(char)to_int;
+        j++;
+    }
+
+    return buff;
+}
+
 ////////////////////
 void create_fs()
 {
@@ -61,12 +103,86 @@ void create_fs()
     create_root();
     
     //aloc disk_blocks
-
+    create_disk_blocks();
 }
 
 void mount_fs()
 {
     int fd_fs=open("fs.data",O_RDONLY);
+    
+    //Initializare superblock
+    char buffer[101];
+    read(fd_fs, buffer, 12);
+    initializare_block(buffer);
+
+    read(fd_fs, buffer, SB.nr_blocks+1);
+    SB.b_bitmap=calloc(SB.nr_blocks,1);
+    for(int i=0;i<SB.nr_blocks;i++)
+        SB.b_bitmap[i]=buffer[i];
+
+    read(fd_fs, buffer, SB.nr_inodes+1);
+    SB.i_bitmap=calloc(SB.nr_inodes,1);
+    for(int i=0;i<SB.nr_inodes;i++)
+        SB.i_bitmap[i]=buffer[i];
+
+    //Initializare inodes
+    for(int i=0;i<SB.nr_inodes;i++)
+    {
+        if(SB.i_bitmap[i]=='1')
+        {
+            char c='0';
+            int index=0;
+            while(c!='|')
+            {  
+                read(fd_fs,buffer+index, 1);
+                c=buffer[index++];
+            }
+            char*p=strtok(buffer, "/|");
+            int aux=hex2int(p);
+            Inodes[i].i_mode=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
+        }
+        else
+        {//citire cu tot cu | 
+            read(fd_fs,buffer,8);
+            Inodes[i]=create_inode(0,0,0,0);
+        }
+    }
+
+    //pt a avea offsetul
+    int offset=lseek(fd_fs,0,SEEK_CUR);
+    
+    //Initilizare disk block-uri
+    //verificare bitmap
+    for(int i=0;i<SB.nr_blocks;i++)
+    {
+        int off=offset;
+        if(SB.b_bitmap[i]=='1')
+            {
+                //offsetul de unde incepe
+                off+=i*DISK_BLOCKS_SIZE;
+                lseek(fd_fs,0,off);
+                char buff[DISK_BLOCKS_SIZE*2+1];
+                read(fd_fs,buff,DISK_BLOCKS_SIZE*2+1);//pt a lua si |
+                
+                DB[i].data=read_data_for_db(buff);
+            }
+        else
+        {
+            DB[i].data=calloc(DISK_BLOCKS_SIZE,1);
+        }
+    }
 
     close(fd_fs);
 }
@@ -80,14 +196,76 @@ void sync_fs()
         perror("fd");
     
     //write superblock;
-    write(fd_fs,&SB,sizeof(struct superblock));
+    char hexstring[9];
+    sprintf(hexstring, "%X", SB.nr_blocks);
+    write(fd_fs,hexstring,strlen(hexstring));
+    write(fd_fs, " ", 1);
 
-    //write inodes
-    for(int i=0;i<MAX_INODES;i++)
-        write(fd_fs,&Inodes[i],sizeof(struct inode));
+    sprintf(hexstring, "%X", SB.nr_inodes);
+    write(fd_fs,hexstring,strlen(hexstring));
+    write(fd_fs, " ", 1);
+
+    sprintf(hexstring, "%X", SB.nr_free_blocks);
+    write(fd_fs,hexstring,strlen(hexstring));
+    write(fd_fs, " ", 1);
+
+    sprintf(hexstring, "%X", SB.nr_free_inodes);
+    write(fd_fs,hexstring,strlen(hexstring));
+    write(fd_fs, " ", 1);
+
+//scriere bitmap
+   for(int i=0;i<SB.nr_blocks;i++)
+   {
+    if(SB.b_bitmap[i]=='1')
+        sprintf(hexstring, "%X", SB.b_bitmap[i]-'0');
+    else sprintf(hexstring, "%X", SB.b_bitmap[i]);
+    write(fd_fs,hexstring,1);
+   }
+    write(fd_fs, " ", 1);
+
+    for(int i=0;i<SB.nr_inodes;i++)
+    {
+        sprintf(hexstring, "%X", SB.i_bitmap[i]);
+        write(fd_fs,hexstring,1);
+   }
+    write(fd_fs, " ", 1);
+
+//write inodes
+    // | intre inode-uri
+    // / intre datele dintr-un inode
+    for(int i=0;i<SB.nr_inodes;i++)
+    {
+        sprintf(hexstring, "%X", Inodes[i].i_mode);
+        write(fd_fs,hexstring,strlen(hexstring));
+        write(fd_fs, "/", 1);
+
+        sprintf(hexstring, "%X", Inodes[i].i_uid);
+        write(fd_fs,hexstring,strlen(hexstring));
+        write(fd_fs, "/", 1);
+
+        sprintf(hexstring, "%X", Inodes[i].i_gid);
+        write(fd_fs,hexstring,strlen(hexstring));
+        write(fd_fs, "/", 1);
+
+        sprintf(hexstring, "%X", Inodes[i].i_blocks);
+        write(fd_fs,hexstring,strlen(hexstring));
+        if(i!=SB.nr_inodes-1)
+        write(fd_fs, "|", 1);
+    }
    
+    write(fd_fs, " ", 1);
+    char hexablock[DISK_BLOCKS_SIZE*2+1];
+
     //write disk blocks
-    
+    for(int i=0;i<SB.nr_blocks;i++)
+    {
+        for(int j=0;j<DISK_BLOCKS_SIZE;j++)
+            sprintf(hexablock+j*2, "%02X", DB[i].data[j]);
+        write(fd_fs,hexablock,strlen(hexablock));
+        if(i!=SB.nr_blocks-1)
+            write(fd_fs, "|", 1);
+    }
+
     close(fd_fs);
 }
 
@@ -102,12 +280,14 @@ void copyfrom(const char* file)
     int index=-1;
     int i=1;
     while(index==-1)
+    {  
         if(SB.i_bitmap[i]==0)
         {
             index=i;
             SB.i_bitmap[i]=1;
         }
-
+        i++;
+    }
     //citire din fisier
     int size=about_file.st_size;
     char buff[size];
@@ -119,9 +299,9 @@ void copyfrom(const char* file)
         nr_blocks++;
 
     //populare tabela inodes
-    Inodes[i]=create_inode(about_file.st_mode,about_file.st_uid,
+    Inodes[index]=create_inode(about_file.st_mode,about_file.st_uid,
                         about_file.st_gid,nr_blocks);
-
+    SB.nr_free_inodes--;
 
     //verificare diskblock liber -- pt fiecare diskblock necesar
     int offset_buff=0;
@@ -130,18 +310,23 @@ void copyfrom(const char* file)
         index=-1;
         i=0;
         while(index==-1)
+        {
             if(SB.b_bitmap[i]==0)
             {
                 index=i;
-                SB.b_bitmap[i]=1;
+                SB.b_bitmap[i]='1';
             }
-        //append la date
-        int offset_fs=OFFSET+index*DISK_BLOCKS_SIZE;
-        lseek(fd_fs,offset_fs,SEEK_SET);
-        //scriere in diskblock
-        write(fd_fs,buff+offset_buff,DISK_BLOCKS_SIZE);
-        offset_buff+=DISK_BLOCKS_SIZE;
+            i++;
+        }
+        
+            
+        strncpy(DB[index].data,buff,DISK_BLOCKS_SIZE);
+        SB.nr_free_blocks--;
+        
     }
+
+    sync_fs();
+
 
     close(fd_fs);
     close(fd);
@@ -149,8 +334,9 @@ void copyfrom(const char* file)
 
 void main()
 {
-    create_fs();
-    sync_fs();
-    copyfrom("fis.txt");
-    printf("succes!\n");
+    //create_fs();
+    //sync_fs();
+    //copyfrom("fis.txt");
+    mount_fs();
+    //printf("succes!\n");
 }
