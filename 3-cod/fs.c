@@ -40,33 +40,13 @@ void create_root()
 {
     Inodes[0]=create_inode(777,0,0,0);
     SB.nr_free_inodes--;
-    SB.i_bitmap[0]='1';
+    SB.i_bitmap[0]=1;
 
     for(int i=1;i<MAX_INODES;i++)
        Inodes[i]=create_inode(0,0,0,0);
 }
 
-
-struct superblock read_superblock(int fd)
-{
-    struct superblock SB2;
-    read(fd,&SB2,sizeof(struct superblock));
-    return SB2;
-
-}
-////////////////////
-void create_fs()
-{
-    //alloc superblock
-    create_superblock();
-
-    //alloc inode for root
-    create_root();
-    
-    //aloc disk_blocks
-    create_disk_blocks();
-}
-
+//pt hexa
 int getNum(char ch)
 {
     int num = 0;
@@ -106,12 +86,21 @@ int getNum(char ch)
     return num;
 }
 
+//nr^a
+int power(int nr,int a)
+{
+    if(a==0)return 1;
+    for(int i=0;i<a;i++)
+    {
+        nr=nr*nr;
+    }
+    return nr;
+}
+
 unsigned int hex2int(unsigned char hex[])
 {
-    unsigned int x = 0;
-    x = (getNum(hex[0])) * 16 + (getNum(hex[1]));
-
-    return x;
+    int number = (int)strtol(hex, NULL, 16);
+    return number;
 }
 
 void initializare_block(char* info_block)
@@ -127,6 +116,26 @@ void initializare_block(char* info_block)
 
     p=strtok(NULL, " ");
     SB.nr_free_inodes=hex2int(p);
+}
+
+struct superblock read_superblock(int fd)
+{
+    struct superblock SB2;
+    read(fd,&SB2,sizeof(struct superblock));
+    return SB2;
+
+}
+////////////////////
+void create_fs()
+{
+    //alloc superblock
+    create_superblock();
+
+    //alloc inode for root
+    create_root();
+    
+    //aloc disk_blocks
+    create_disk_blocks();
 }
 
 void mount_fs()
@@ -148,6 +157,7 @@ void mount_fs()
     for(int i=0;i<SB.nr_inodes;i++)
         SB.i_bitmap[i]=buffer[i];
 
+    //Initializare si inode
     for(int i=0;i<SB.nr_inodes;i++)
     {
         if(SB.i_bitmap[i]=='1')
@@ -155,16 +165,32 @@ void mount_fs()
             char c='0';
             int index=0;
             while(c!='|')
-            {   
+            {  
                 read(fd_fs,buffer+index, 1);
-                index++;
+                c=buffer[index++];
             }
             char*p=strtok(buffer, "/|");
-            //int mode=hex2int()
+            int aux=hex2int(p);
+            Inodes[i].i_mode=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
+
+            p=strtok(NULL, "/|");
+            aux=hex2int(p);
+            Inodes[i].i_uid=aux;
         }
         else
             Inodes[i]=create_inode(0,0,0,0);
     }
+
+
+    //Initializare inodes
 
     close(fd_fs);
 }
@@ -209,7 +235,9 @@ void sync_fs()
    }
     write(fd_fs, " ", 1);
 
-    //write inodecreas
+    //write inodes
+    // | intre inode-uri
+    // / intre datele dintr-un inode
     for(int i=0;i<SB.nr_inodes;i++)
     {
         sprintf(hexstring, "%X", Inodes[i].i_mode);
@@ -242,7 +270,6 @@ void sync_fs()
             write(fd_fs, "|", 1);
     }
 
-    
     close(fd_fs);
 }
 
@@ -261,7 +288,7 @@ void copyfrom(const char* file)
         if(SB.i_bitmap[i]==0)
         {
             index=i;
-            SB.i_bitmap[i]='1';
+            SB.i_bitmap[i]=1;
         }
         i++;
     }
@@ -302,7 +329,6 @@ void copyfrom(const char* file)
         
     }
 
-    
     sync_fs();
 
 
