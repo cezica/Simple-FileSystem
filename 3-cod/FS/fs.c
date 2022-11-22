@@ -252,6 +252,21 @@ void scriere_db(int fd_fs)
 ////////////////////////////
 
 //////////////////copy_from
+void inode_info(int fd,int index)
+{
+    struct stat about_file;
+    fstat(fd,&about_file);
+
+    //populare tabela inodes
+    //nr blocks pt fs-ul nostru
+    int nr_blocks=about_file.st_size/DISK_BLOCKS_SIZE;
+    if(about_file.st_size%DISK_BLOCKS_SIZE!=0)
+        nr_blocks++;
+    Inodes[index]=create_inode(about_file.st_mode,about_file.st_uid,
+                        about_file.st_gid,nr_blocks);
+    SB.nr_free_inodes--;
+}
+
 int index_inode_liber()
 {
     int index=-1;
@@ -270,22 +285,14 @@ int index_inode_liber()
 
 void populare_disk_blocks(int fd,int index)
 {
-    struct stat about_file;
-    fstat(fd,&about_file);
+    inode_info(fd,index);
     //citire din fisier
-    int size=about_file.st_size;
+    int size=Inodes[index].i_size;
     char buff[size];
     read(fd,buff,size);
 
     //nr disk block-uri pentru file sys nostru
-    int nr_blocks=size/DISK_BLOCKS_SIZE;
-    if(size%DISK_BLOCKS_SIZE!=0)
-        nr_blocks++;
-
-    //populare tabela inodes
-    Inodes[index]=create_inode(about_file.st_mode,about_file.st_uid,
-                        about_file.st_gid,nr_blocks);
-    SB.nr_free_inodes--;
+    int nr_blocks=Inodes[index].i_blocks;
 
     //verificare diskblock liber -- pt fiecare diskblock necesar
     int offset_buff=0;
@@ -303,15 +310,14 @@ void populare_disk_blocks(int fd,int index)
             i++;
         }
         
-            
         strncpy(DB[index].data,buff,DISK_BLOCKS_SIZE);
-        SB.nr_free_blocks--;
-        
+        SB.nr_free_blocks--;  
     }
 }
 //////////////////////
 
-/////////////////////////
+
+////////////////////////////////////////////////////
 void create_fs()
 {
     create_superblock();
