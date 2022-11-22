@@ -19,32 +19,37 @@
 struct superblock{
     //uint32_t magic; /* Magic number */
 
-    uint32_t nr_blocks; /* Total number of blocks (incl sb & inodes) */
-    uint32_t nr_inodes; /* Total number of inodes */
+    int nr_blocks; /* Total number of blocks (incl sb & inodes) */
+    int nr_inodes; /* Total number of inodes */
 
-    uint32_t nr_free_inodes; /* Number of free inodes */
-    uint32_t nr_free_blocks; /* Number of free blocks */
+    int nr_free_inodes; /* Number of free inodes */
+    int nr_free_blocks; /* Number of free blocks */
 
-    unsigned char *i_bitmap; //bitmap inodes
-    unsigned char *b_bitmap; //bitmap disk blocks
+    int* i_bitmap; //bitmap inodes
+    int* b_bitmap; //bitmap disk blocks
+
+    int current_dir;//index inode
 
     //+padding
 };
 
 struct inode{
-    uint32_t i_mode;   // File mode 
-    uint32_t i_uid;    // Owner id 
-    uint32_t i_gid;    // Group id
-    //uint32_t i_size;   // Size in bytes 
-    uint32_t i_blocks; // Block count
-    //uint32_t ei_block;  // Block with list of extents for this file 
+    int i_mode;   // File mode 
+    //int i_ctime;  //status changed
+    //int i_mtime;  //status modification
+    //int i_atime;  //status acces
+    int i_uid;    // Owner id 
+    int i_gid;    // Group id
+    int i_size;   // Size in bytes 
+    int i_blocks; // Blocks
+
+    //char name[MAX_NAME_FILE];
+    //int index_parent;
+    //int* disk_blocks
 };
 
 struct disk_block{
     unsigned char* data;
-    //uint32_t ee_block; /* first logical block extent covers */
-    //uint32_t ee_len;   /* number of blocks covered*/
-    //uint32_t ee_start; /* first physical block extent covers */
 };
 
 #define OFFSET (sizeof(struct superblock)+sizeof(struct inode)*MAX_INODES)
