@@ -432,7 +432,7 @@ void copyfrom(const char* file)
 
 void change_directory(char* nume_director)
 {
-    for (int i = 1; i < SB.nr_inodes - SB.nr_free_inodes; i++)
+    for (int i = 1; i < SB.nr_inodes; i++)
     {
         if (Inodes[i].i_parent == current_directory && strcmp(Inodes[i].name, nume_director) == 0)
         {
@@ -443,7 +443,7 @@ void change_directory(char* nume_director)
 
 void ls()
 {
-    for (int i = 0; i < SB.nr_inodes - SB.nr_free_inodes; i++)
+    for (int i = 0; i < SB.nr_inodes; i++)
     {
         if (Inodes[i].i_parent == current_directory)
         {
