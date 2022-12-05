@@ -120,50 +120,52 @@ void citire_SB(int fd_fs)
 void citire_Inodes(int fd_fs)
 {
     char buffer[101];
-    for (int i = 0; i < SB.nr_inodes - SB.nr_free_inodes; i++)
+    for (int i = 0; i < SB.nr_inodes; i++)
     {
-
-        char c = '0';
-        int index = 0;
-        while (c != '|')
+        if(SB.i_bitmap[i]==1)
         {
-            read(fd_fs, buffer + index, 1);
-            c = buffer[index];
-            index++;
+            char c = '0';
+            int index = 0;
+            while (c != '|')
+            {
+                read(fd_fs, buffer + index, 1);
+                c = buffer[index];
+                index++;
+            }
+            char* p = strtok(buffer, "/|");
+            unsigned char* temp = read_data_for_db(p);
+            strcpy(Inodes[i].name, temp);
+
+            p = strtok(NULL, "/|");
+            int aux = hex2int(p);
+            Inodes[i].i_parent = aux;
+
+            p = strtok(NULL, "/|");
+            aux = hex2int(p);
+            Inodes[i].i_mode = aux;
+
+            p = strtok(NULL, "/|");
+            aux = hex2int(p);
+            Inodes[i].i_uid = aux;
+
+            p = strtok(NULL, "/|");
+            aux = hex2int(p);
+            Inodes[i].i_gid = aux;
+
+            p = strtok(NULL, "/|");
+            aux = hex2int(p);
+            Inodes[i].i_size = aux;
+
+
+            p = strtok(NULL, "/|");
+            aux = hex2int(p);
+            Inodes[i].i_blocks = aux;
         }
-        char* p = strtok(buffer, "/|");
-        unsigned char* temp = read_data_for_db(p);
-        strcpy(Inodes[i].name, temp);
-
-        p = strtok(NULL, "/|");
-        int aux = hex2int(p);
-        Inodes[i].i_parent = aux;
-
-        p = strtok(NULL, "/|");
-        aux = hex2int(p);
-        Inodes[i].i_mode = aux;
-
-        p = strtok(NULL, "/|");
-        aux = hex2int(p);
-        Inodes[i].i_uid = aux;
-
-        p = strtok(NULL, "/|");
-        aux = hex2int(p);
-        Inodes[i].i_gid = aux;
-
-        p = strtok(NULL, "/|");
-        aux = hex2int(p);
-        Inodes[i].i_size = aux;
-
-
-        p = strtok(NULL, "/|");
-        aux = hex2int(p);
-        Inodes[i].i_blocks = aux;
-    }
-    for (int i = SB.nr_inodes - SB.nr_free_inodes; i < SB.nr_inodes; i++)
-    {
-        read(fd_fs, buffer, 13);
-        Inodes[i] = create_inode("", 0, 0, 0, 0, 0, 0);
+        else
+        {
+            read(fd_fs, buffer, 13);
+            Inodes[i] = create_inode("", 0, 0, 0, 0, 0, 0);
+        }
     }
 }
 
@@ -359,7 +361,7 @@ void populare_disk_blocks(int fd, int index, char* file)
 //////////////////////
 
 
-////////////////////////////////////////////////////
+//////////////////////////////fs.data
 void create_fs()
 {
     create_superblock();
@@ -404,7 +406,10 @@ void sync_fs()
 
     close(fd_fs);
 }
+/////////////////////////////////////
 
+
+/////////////////////////////////////functii
 void copyfrom(char* file)
 {
     int fd = open(file, O_RDONLY);
@@ -455,11 +460,10 @@ void create_directory(char* dir_name)
 
 void main()
 {
-    create_fs();
-    copyfrom("fis.txt");
-    create_directory("test_directory");
-    //mount_fs();
-    ls();
+    //create_fs();
     //copyfrom("fis.txt");
-    sync_fs();
+    //create_directory("test_directory");
+    mount_fs();
+    ls();
+    //sync_fs();
 }
