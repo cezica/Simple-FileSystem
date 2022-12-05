@@ -37,8 +37,8 @@ void create_superblock()
     SB.nr_free_inodes = SB.nr_inodes;
     SB.nr_free_blocks = SB.nr_blocks;
 
-    SB.i_bitmap = calloc(SB.nr_inodes, 1);
-    SB.b_bitmap = calloc(SB.nr_blocks, 1);
+    SB.i_bitmap = calloc(SB.nr_inodes, 4);
+    SB.b_bitmap = calloc(SB.nr_blocks, 4);
 }
 
 void create_root()
@@ -318,7 +318,9 @@ int index_inode_liber()
 
 void populare_disk_blocks(int fd, int index, char* file)
 {
+
     inode_info(fd, index, file);
+
     //citire din fisier
 
     char verificare[100];
@@ -335,26 +337,29 @@ void populare_disk_blocks(int fd, int index, char* file)
         //nr disk block-uri pentru file sys nostru
         int nr_blocks = Inodes[index].i_blocks;
 
+
         //verificare diskblock liber -- pt fiecare diskblock necesar
         int offset_buff = 0;
         for (int i = 0; i < nr_blocks; i++)
         {
-            index = -1;
-            i = 0;
-            while (index == -1)
+            int index_bitmap = -1;
+            int j = 0;
+            while (index_bitmap == -1)
             {
-                if (SB.b_bitmap[i] == 0)
+                if (SB.b_bitmap[j] == 0)
                 {
-                    index = i;
-                    SB.b_bitmap[i] = 1;
-                    strncpy(DB[index].data, buff, DISK_BLOCKS_SIZE);
-                    SB.nr_free_blocks--;
+                    index_bitmap = j;
+                    SB.b_bitmap[index_bitmap] = 1;
+
                 }
-                i++;
+                j++;
             }
 
+            strncpy(DB[index_bitmap].data, buff, DISK_BLOCKS_SIZE);
+            SB.nr_free_blocks--;
         }
     }
+
 }
 //////////////////////
 
@@ -413,9 +418,12 @@ void copyfrom(const char* file)
     //verificare inode liber
     int index = index_inode_liber();
 
+
     //disk block-uri
     populare_disk_blocks(fd, index, file);
 
+
+    printf("\n");
     sync_fs();
 
     close(fd_fs);
@@ -439,6 +447,7 @@ void ls()
     {
         if (Inodes[i].i_parent == current_directory)
         {
+
             printf("%s\t", Inodes[i].name);
         }
     }
@@ -452,9 +461,9 @@ void main()
     //copyfrom("fis.txt");
     mount_fs();
     //copyfrom("Test");
-    ls();
-    change_directory("Test");
-    ls();
-    //copyfrom("fis.txt");
-    printf("%d", Inodes[0].i_parent);
+    //ls();
+    //change_directory("Test");
+    //ls();
+    copyfrom("fis.txt");
+    //printf("%d", Inodes[0].i_parent);
 }
