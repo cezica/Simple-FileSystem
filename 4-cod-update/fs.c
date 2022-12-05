@@ -297,7 +297,7 @@ void inode_info(int fd, int index, char* filename)
     int nr_blocks = about_file.st_size / DISK_BLOCKS_SIZE;
     if (about_file.st_size % DISK_BLOCKS_SIZE != 0)
         nr_blocks++;
-    Inodes[index] = create_inode(filename, current_directory, Inodes[current_directory].i_mode, about_file.st_uid,
+    Inodes[index] = create_inode(filename, current_directory, 10755, about_file.st_uid,
         about_file.st_gid, nr_blocks, about_file.st_size);
     SB.nr_free_inodes--;
 }
@@ -421,20 +421,18 @@ void copyfrom(char* file)
     //disk block-uri
     populare_disk_blocks(fd, index, file);
 
-    sync_fs();
-
     close(fd_fs);
     close(fd);
 }
 
 void change_directory(char* nume_director)
 {
-    for (int i = 1; i < SB.nr_inodes - SB.nr_free_inodes; i++)
+    for (int i = 1; i < SB.nr_inodes; i++)
     {
-        if (Inodes[i].i_parent == current_directory && strcmp(Inodes[i].name, nume_director) == 0)
-        {
-            current_directory = i;
-        }
+        if(SB.i_bitmap[i]==1)
+            if (Inodes[i].i_parent == current_directory && 
+            strcmp(Inodes[i].name, nume_director) == 0)
+                current_directory = i;
     }
 }
 
@@ -458,12 +456,26 @@ void create_directory(char* dir_name)
     0,0);
 }
 
+void create_file(char* filename)
+{
+    int i=index_inode_liber();
+
+    Inodes[i]=create_inode(filename,current_directory,
+    10755,Inodes[current_directory].i_uid,Inodes[current_directory].i_gid,
+    0,0);
+
+}
+
 void main()
 {
-    //create_fs();
-    //copyfrom("fis.txt");
-    //create_directory("test_directory");
-    mount_fs();
+    create_fs();
+    copyfrom("fis.txt");
+    create_directory("test_directory");
     ls();
-    //sync_fs();
+    
+    change_directory("test_directory");
+    create_file("file.txt");
+    //mount_fs();
+    ls();
+    sync_fs();
 }
