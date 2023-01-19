@@ -39,6 +39,10 @@ struct inode{
     int i_blocks; // Blocks
 };
 
+struct disk_block{
+    unsigned char* data;
+};
+
 void create_fs(); //initializare fs
 void mount_fs(); //incarcarea unui fs
 void sync_fc(); //scriere fs
