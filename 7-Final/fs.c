@@ -405,116 +405,7 @@ void populare_disk_blocks(int fd, int index, char *file)
 }
 
 ////////////////////////////////////////////////////
-void create_fs()
-{
-    create_superblock();
-
-    create_root();
-
-    create_disk_blocks();
-}
-
-void mount_fs()
-{
-    int fd_fs = open("fs.data", O_RDONLY);
-
-    // Initializare superblock
-    citire_SB(fd_fs);
-
-    // Initializare inodes
-    citire_Inodes(fd_fs);
-
-    // Initilizare disk block-uri
-    citire_DB(fd_fs);
-
-    close(fd_fs);
-}
-
-void sync_fs()
-{
-    // open - fs.data
-    int fd_fs = open("fs.data", O_RDWR, 0777);
-
-    if (fd_fs < 0)
-        perror("fd");
-
-    // write superblock;
-    scriere_superblock(fd_fs);
-
-    // write inodes
-    scriere_inodes(fd_fs);
-
-    // write disk blocks
-    scriere_db(fd_fs);
-
-    close(fd_fs);
-}
-
-void copyfrom(char *file)
-{
-    for (int i = 0; i < SB.nr_inodes; i++)
-    {
-        if(strcmp(Inodes[i].name, file) == 0 && Inodes[i].i_parent==current_directory)
-            error("Exista deja un fisier cu acest nume in acest director");
-    }
-    int fd = open(file, O_RDONLY);
-    int fd_fs = open("fs.data", O_WRONLY);
-
-    // verificare inode liber
-    int index = index_inode_liber();
-
-    // disk block-uri
-    populare_disk_blocks(fd, index, file);
-
-    printf("\n");
-    sync_fs();
-
-    close(fd_fs);
-    close(fd);
-}
-
-void change_directory(char *nume_director)
-{
-    if (strcmp(nume_director, "..") == 0)
-        current_directory = Inodes[current_directory].i_parent;
-    for (int i = 1; i < SB.nr_inodes; i++)
-    {
-        if (Inodes[i].i_parent == current_directory && strcmp(Inodes[i].name, nume_director) == 0)
-        {
-            char verificare[100];
-            sprintf(verificare, "%o", Inodes[i].i_mode);
-            if (verificare[0] == '4' && verificare[1] == '0')
-            {
-                current_directory = i;
-            }
-        }
-    }
-}
-
-void ls()
-{
-    for (int i = 0; i < SB.nr_inodes; i++)
-    {
-        if (Inodes[i].i_parent == current_directory)
-        {
-
-            printf("%s\t", Inodes[i].name);
-        }
-    }
-    printf("\n\n");
-}
-
-void create_directory(char *dir_name)
-{
-    int i = index_inode_liber();
-
-    Inodes[i] = create_inode(dir_name, current_directory, Inodes[current_directory].i_mode,
-                             Inodes[current_directory].i_uid, Inodes[current_directory].i_gid,
-                             0, 0);
-    SB.nr_free_inodes--;
-}
-
-void create_file(char *filename)
+void create_file(char *filename)//in fs.data
 {
     int i = index_inode_liber();
 
@@ -602,6 +493,119 @@ void afisare_cale_fisier(int index_fisier)
 
     free(raspuns);
 }
+///////////////////////////
+
+////////////////////comenzi terminal
+void create_fs()
+{
+    create_superblock();
+
+    create_root();
+
+    create_disk_blocks();
+}
+
+void mount_fs()
+{
+    int fd_fs = open("fs.data", O_RDONLY);
+
+    // Initializare superblock
+    citire_SB(fd_fs);
+
+    // Initializare inodes
+    citire_Inodes(fd_fs);
+
+    // Initilizare disk block-uri
+    citire_DB(fd_fs);
+
+    close(fd_fs);
+}
+
+void sync_fs()
+{
+    // open - fs.data
+    int fd_fs = open("fs.data", O_RDWR, 0777);
+
+    if (fd_fs < 0)
+        perror("fd");
+
+    // write superblock;
+    scriere_superblock(fd_fs);
+
+    // write inodes
+    scriere_inodes(fd_fs);
+
+    // write disk blocks
+    scriere_db(fd_fs);
+
+    close(fd_fs);
+}
+
+void ls()
+{
+    for (int i = 0; i < SB.nr_inodes; i++)
+    {
+        if (Inodes[i].i_parent == current_directory)
+        {
+
+            printf("%s\t", Inodes[i].name);
+        }
+    }
+    printf("\n\n");
+}
+
+void copyfrom(char *file)
+{
+    for (int i = 0; i < SB.nr_inodes; i++)
+    {
+        if(strcmp(Inodes[i].name, file) == 0 && Inodes[i].i_parent==current_directory)
+            error("Exista deja un fisier cu acest nume in acest director");
+    }
+    int fd = open(file, O_RDONLY);
+    int fd_fs = open("fs.data", O_WRONLY);
+
+    // verificare inode liber
+    int index = index_inode_liber();
+
+    // disk block-uri
+    populare_disk_blocks(fd, index, file);
+
+    printf("\n");
+    sync_fs();
+
+    close(fd_fs);
+    close(fd);
+}
+
+void cat(char *nume_fisier)
+{
+    int index_fisier = -1;
+    for (int i = 0; i < SB.nr_inodes; i++)
+    {
+
+        if (strcmp(Inodes[i].name, nume_fisier) == 0 && Inodes[i].i_parent == current_directory)
+        {
+
+            index_fisier = i;
+        }
+    }
+    
+    if(index_fisier == -1)
+        printf("Fisierul nu exista in acest director\n");
+    else
+    {
+        if(Inodes[index_fisier].i_blocks==0)
+            printf("\n");
+                    else
+        {
+            for(int i=0;i<Inodes[index_fisier].i_blocks;i++)
+            {
+                printf("%s", DB[Inodes[index_fisier].index_blocks[i]].data);
+            }
+        }
+    }
+    printf("\n");
+}
 
 void find(char *nume_fisier)
 {
@@ -624,35 +628,35 @@ void find(char *nume_fisier)
     if (index_fisier == -1)
         error("Fisierul cautat nu exista!");
 }
-void cat(char *nume_fisier)
+
+void change_directory(char *nume_director)
 {
-    int index_fisier = -1;
-    for (int i = 0; i < SB.nr_inodes; i++)
+    if (strcmp(nume_director, "..") == 0)
+        current_directory = Inodes[current_directory].i_parent;
+    for (int i = 1; i < SB.nr_inodes; i++)
     {
-
-        if (strcmp(Inodes[i].name, nume_fisier) == 0 && Inodes[i].i_parent == current_directory)
+        if (Inodes[i].i_parent == current_directory && strcmp(Inodes[i].name, nume_director) == 0)
         {
-
-            index_fisier = i;
-        }
-    }
-    
-    if(index_fisier == -1)
-        printf("Fisierul nu exista in acest director\n");
-    else
-    {
-        if(Inodes[index_fisier].i_blocks==0)
-            printf("\n");
-        else
-        {
-            for(int i=0;i<Inodes[index_fisier].i_blocks;i++)
+            char verificare[100];
+            sprintf(verificare, "%o", Inodes[i].i_mode);
+            if (verificare[0] == '4' && verificare[1] == '0')
             {
-                printf("%s", DB[Inodes[index_fisier].index_blocks[i]].data);
+                current_directory = i;
             }
         }
     }
-    printf("\n");
 }
+
+void create_directory(char *dir_name)
+{
+    int i = index_inode_liber();
+
+    Inodes[i] = create_inode(dir_name, current_directory, Inodes[current_directory].i_mode,
+                             Inodes[current_directory].i_uid, Inodes[current_directory].i_gid,
+                             0, 0);
+    SB.nr_free_inodes--;
+}
+//////////////////////////
 
 void main()
 {
